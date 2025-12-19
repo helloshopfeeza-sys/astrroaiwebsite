@@ -1,0 +1,1348 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrro. | The Consensus Engine</title>
+    <link rel="icon" href="./assets/logo.png" type="image/png">
+    
+    <!-- Fonts: Inter & Space Grotesk for that "Tech" look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            400: '#2dd4bf',
+                            500: '#14b8a6', // Teal/Cyan primary
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        },
+                        accent: {
+                            purple: '#a855f7',
+                            blue: '#3b82f6',
+                            pink: '#ec4899'
+                        },
+                        dark: {
+                            bg: '#050507',
+                            card: '#0e0e11',
+                            border: '#1f1f23'
+                        }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'spin-slow': 'spin 15s linear infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React & Framer Motion -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            background-color: #050507;
+            color: white;
+            overflow-x: hidden;
+        }
+        .glass-nav {
+            background: rgba(5, 5, 7, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-gradient-brand {
+            background: linear-gradient(to right, #3b82f6, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050507; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { motion, AnimatePresence, useScroll, useTransform } = window.Motion;
+        
+        // Icons
+        const Icons = {
+            Brain: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
+            Zap: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            ShieldCheck: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>,
+            Search: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            ArrowRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+            Check: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            Sparkles: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 9v4"/></svg>,
+            X: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 12"/></svg>,
+            Menu: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+            Book: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        };
+
+        // --- COMPONENTS ---
+
+        const FadeInWhenVisible = ({ children, delay = 0, className = "" }) => {
+            return (
+                <motion.div
+                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.8, delay: delay, ease: [0.22, 1, 0.36, 1] }}
+                    className={className}
+                >
+                    {children}
+                </motion.div>
+            );
+        };
+
+        const Navbar = ({ onNavigate, currentView }) => {
+            const [isScrolled, setIsScrolled] = useState(false);
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => setIsScrolled(window.scrollY > 20);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            const handleNav = (view, e) => {
+                e.preventDefault();
+                if (onNavigate) onNavigate(view);
+                setMobileMenuOpen(false);
+            };
+
+            return (
+                <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'glass-nav py-4' : 'py-6 bg-transparent'}`}>
+                    <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                        <motion.div 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex items-center gap-2 cursor-pointer"
+                            onClick={(e) => handleNav('home', e)}
+                        >
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                                <img src="./assets/logo.png" alt="Astrro Logo" className="w-full h-full object-contain" />
+                            </div>
+                            <span className="text-xl font-display font-bold tracking-tight text-white">Astrro<span className="text-indigo-400">.</span></span>
+                        </motion.div>
+
+                        {/* Desktop Links */}
+                        <div className="hidden md:flex items-center gap-8">
+                            <a href="#" onClick={(e) => handleNav('home', e)} className={`text-sm transition-colors ${currentView === 'home' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>Home</a>
+                            <a href="#" onClick={(e) => handleNav('how-it-works', e)} className={`text-sm transition-colors ${currentView === 'how-it-works' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>How it Works</a>
+                            <a href="#" onClick={(e) => handleNav('developers', e)} className={`text-sm transition-colors ${currentView === 'developers' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>Developers</a>
+                            <a href="#pricing" onClick={(e) => {
+                                e.preventDefault();
+                                if (currentView !== 'home') {
+                                    onNavigate('home');
+                                    setTimeout(() => {
+                                        const el = document.getElementById('pricing');
+                                        if(el) el.scrollIntoView({behavior: 'smooth'});
+                                    }, 100);
+                                } else {
+                                    const el = document.getElementById('pricing');
+                                    if(el) el.scrollIntoView({behavior: 'smooth'});
+                                }
+                            }} className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a>
+                        </div>
+
+                        {/* CTA */}
+                        <div className="hidden md:flex items-center gap-4">
+                            <a href="https://chat.astrroai.com" className="text-sm font-medium text-white hover:text-gray-300">Log in</a>
+                            <motion.a 
+                                href="https://chat.astrroai.com"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="px-5 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors"
+                            >
+                                Launch Chat
+                            </motion.a>
+                        </div>
+
+                        {/* Mobile Menu Button */}
+                        <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                            {mobileMenuOpen ? <Icons.X /> : <Icons.Menu />}
+                        </button>
+                    </div>
+
+                    {/* Mobile Menu */}
+                    <AnimatePresence>
+                        {mobileMenuOpen && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="md:hidden glass-nav border-t border-gray-800"
+                            >
+                                <div className="flex flex-col p-6 gap-4">
+                                    <a href="#" onClick={(e) => handleNav('home', e)} className="text-gray-300">Home</a>
+                                    <a href="#" onClick={(e) => handleNav('how-it-works', e)} className="text-gray-300">How it Works</a>
+                                    <a href="#" onClick={(e) => handleNav('developers', e)} className="text-gray-300">Developers</a>
+                                    <a href="#pricing" onClick={(e) => {
+                                        e.preventDefault();
+                                        if (currentView !== 'home') {
+                                            onNavigate('home');
+                                            setTimeout(() => {
+                                                const el = document.getElementById('pricing');
+                                                if(el) el.scrollIntoView({behavior: 'smooth'});
+                                            }, 100);
+                                        } else {
+                                            const el = document.getElementById('pricing');
+                                            if(el) el.scrollIntoView({behavior: 'smooth'});
+                                        }
+                                        setMobileMenuOpen(false);
+                                    }} className="text-gray-300">Pricing</a>
+                                    <a href="https://chat.astrroai.com" className="text-white font-semibold">Launch Chat</a>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </nav>
+            );
+        };
+
+        const Hero = ({ onNavigate }) => {
+            const { scrollY } = useScroll();
+            const y1 = useTransform(scrollY, [0, 1000], [0, 400]);
+            const y2 = useTransform(scrollY, [0, 1000], [0, -300]);
+
+            return (
+                <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+                    {/* Background Gradients */}
+                    <motion.div style={{ y: y1 }} className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] animate-blob opacity-50"></motion.div>
+                    <motion.div style={{ y: y2 }} className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-blob animation-delay-2000 opacity-50"></motion.div>
+
+                    <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-card mb-8"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            <span className="text-xs font-medium text-gray-300">Astrro 1.0 Debate is live</span>
+                        </motion.div>
+
+                        <motion.h1 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.2 }}
+                            className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight leading-tight mb-6"
+                        >
+                            The End of <br />
+                            <span className="text-gradient-brand">Uncertainty.</span>
+                        </motion.h1>
+
+                        <motion.p 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.4 }}
+                            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10"
+                        >
+                            Stop trusting a single AI model. Astrro cross-references Llama, Gemini, and GPT in real-time to give you one champion answer.
+                        </motion.p>
+
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.6 }}
+                            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                        >
+                            <a 
+                                href="https://chat.astrroai.com"
+                                className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                            >
+                                Start Consensus Engine <Icons.ArrowRight />
+                            </a>
+                            <a 
+                                href="#"
+                                onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('how-it-works'); }}
+                                className="w-full sm:w-auto px-8 py-4 rounded-full glass-card text-white font-medium hover:bg-white/10 transition-all"
+                            >
+                                How it works
+                            </a>
+                        </motion.div>
+
+
+                    </div>
+                </section>
+            );
+        };
+
+        const FeatureCard = ({ icon, title, desc, delay }) => {
+            return (
+                <FadeInWhenVisible delay={delay} className="h-full">
+                    <div className="glass-card p-8 rounded-2xl hover:border-gray-600 transition-all hover:-translate-y-1 duration-300 h-full group">
+                        <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center mb-6 text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                            {icon}
+                        </div>
+                        <h3 className="text-xl font-bold mb-3">{title}</h3>
+                        <p className="text-gray-400 leading-relaxed">{desc}</p>
+                    </div>
+                </FadeInWhenVisible>
+            );
+        };
+
+        const Features = () => {
+            return (
+                <section id="features" className="py-32 bg-dark-bg relative">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <div className="mb-20">
+                            <FadeInWhenVisible>
+                                <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">Three brains.<br />One source of truth.</h2>
+                                <p className="text-gray-400 max-w-xl text-lg">Astrro isn't just a chatbot. It's an orchestration layer that forces the world's best AI models to agree before answering you.</p>
+                            </FadeInWhenVisible>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-6">
+                            <FeatureCard 
+                                icon={<Icons.ShieldCheck />}
+                                title="Debate Mode"
+                                desc="Llama 4, Qwen, and GPT-OSS debate your question in the background. We filter out hallucinations and deliver the winner."
+                                delay={0.1}
+                            />
+                            <FeatureCard 
+                                icon={<Icons.Search />}
+                                title="Live Grounding"
+                                desc="Connected to the live internet via Google Search. We don't just guess facts; we verify them with citations."
+                                delay={0.2}
+                            />
+                            <FeatureCard 
+                                icon={<Icons.Zap />}
+                                title="Zero Latency"
+                                desc="Powered by Groq's LPU™ Inference Engine. Get answers faster than you can think, even with complex multi-model reasoning."
+                                delay={0.3}
+                            />
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Pricing = () => {
+            const [billingCycle, setBillingCycle] = useState('monthly');
+
+            return (
+                <section id="pricing" className="py-32 border-t border-dark-border bg-gradient-to-b from-dark-bg to-black">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <div className="text-center mb-20">
+                            <FadeInWhenVisible>
+                                <h2 className="text-4xl font-display font-bold mb-4">Intelligence, priced fairly.</h2>
+                                <p className="text-gray-400">Start for free. Upgrade for the Consensus Engine.</p>
+                            </FadeInWhenVisible>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                            
+                            {/* Free Tier */}
+                            <FadeInWhenVisible delay={0.1} className="h-full">
+                                <div className="p-8 rounded-3xl border border-dark-border bg-dark-card/50 flex flex-col h-full hover:border-gray-600 transition-colors duration-300">
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-semibold mb-2">Free</h3>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-4xl font-bold">$0</span>
+                                            <span className="text-gray-500">/mo</span>
+                                        </div>
+                                        <p className="text-gray-400 mt-4 text-sm">The essential intelligence for everyday tasks.</p>
+                                    </div>
+                                    <ul className="space-y-4 mb-8 flex-1">
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Standard Intelligence:</strong> Access to our lightweight, speed-optimized models.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Text-Only Interface:</strong> Optimized for fast Q&A and writing assistance.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Hourly Allowance:</strong> Includes 6 messages per hour.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Standard Context:</strong> Perfect for quick questions and short conversations.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-400 italic">
+                                            <Icons.X className="w-5 h-5 text-gray-500 flex-shrink-0"/> 
+                                            <span>Note: Does not include Debate Mode, Vision, or Canvas.</span>
+                                        </li>
+                                    </ul>
+                                    <a href="https://chat.astrroai.com" className="w-full py-3 rounded-xl border border-gray-700 text-white font-medium hover:bg-gray-800 transition-colors text-center">Start Free</a>
+                                </div>
+                            </FadeInWhenVisible>
+
+                            {/* Pro Tier - Highlighted */}
+                            <FadeInWhenVisible delay={0.2} className="h-full">
+                                <div className="p-8 rounded-3xl border border-blue-500/50 bg-blue-500/5 flex flex-col relative h-full hover:border-blue-500 transition-colors duration-300 transform hover:-translate-y-2">
+                                    <div className="absolute top-0 right-0 bg-blue-500 text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">POPULAR</div>
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-semibold mb-2 text-blue-400">Pro</h3>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-4xl font-bold">$17</span>
+                                            <span className="text-gray-500">/mo</span>
+                                        </div>
+                                        <p className="text-gray-400 mt-4 text-sm">Consensus intelligence for professionals who need accuracy.</p>
+                                    </div>
+                                    <ul className="space-y-4 mb-8 flex-1">
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span>Access to <strong className="text-white">Astrro 1.0 Pro</strong></span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Astrro 1.0 Debate:</strong> Get smarter, debated answers instantly.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Visual Intelligence:</strong> Upload and analyze documents, screenshots, and photos.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Astrro Canvas:</strong> A dedicated side-by-side workspace for writing code and editing projects.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Deep Dive:</strong> Tackle harder questions with multi-model verification.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span>Includes <strong className="text-white">50 Consensus Debates</strong> per day.</span>
+                                        </li>
+                                    </ul>
+                                    <button disabled className="w-full py-3 rounded-xl bg-blue-600/50 text-white/50 font-bold cursor-not-allowed text-center shadow-none">Free for now</button>
+                                </div>
+                            </FadeInWhenVisible>
+
+                            {/* Ultimate Tier */}
+                            <FadeInWhenVisible delay={0.3} className="h-full">
+                                <div className="p-8 rounded-3xl border border-dark-border bg-dark-card/50 flex flex-col h-full hover:border-purple-500/50 transition-colors duration-300">
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-semibold mb-2 text-purple-400">Ultimate</h3>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-4xl font-bold">$75</span>
+                                            <span className="text-gray-500">/mo</span>
+                                        </div>
+                                        <p className="text-gray-400 mt-4 text-sm">Unconstrained power for mastering advanced topics.</p>
+                                    </div>
+                                    <ul className="space-y-4 mb-8 flex-1">
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Unlimited access</strong> to Astrro 1.0 Pro</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Unlimited Access</strong> to Astrro 1.0 Debate</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Visual Intelligence:</strong> Upload and analyze documents, screenshots, and photos.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Astrro Canvas:</strong> A dedicated side-by-side workspace for writing code and editing projects.</span>
+                                        </li>
+                                        <li className="flex items-start gap-3 text-sm text-gray-300">
+                                            <Icons.Check className="w-5 h-5 text-white flex-shrink-0"/> 
+                                            <span><strong className="text-white">Full Priority Access.</strong></span>
+                                        </li>
+                                    </ul>
+                                    <button disabled className="w-full py-3 rounded-xl border border-gray-700/50 text-white/50 font-medium cursor-not-allowed text-center">Free for now</button>
+                                </div>
+                            </FadeInWhenVisible>
+
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const HowItWorks = () => {
+            const steps = [
+                {
+                    title: "The Spark",
+                    desc: "You ask a complex question. Astrro doesn't just answer; it understands the nuance.",
+                    icon: <Icons.Brain className="w-6 h-6 text-white" />,
+                    color: "bg-blue-500"
+                },
+                {
+                    title: "The Council",
+                    desc: "Your query is dispatched to the world's leading models: Llama, GPT, Gemini and Qwen simultaneously.",
+                    icon: <Icons.Zap className="w-6 h-6 text-white" />,
+                    color: "bg-purple-500"
+                },
+                {
+                    title: "The Debate",
+                    desc: "In a hidden scratchpad, the models critique each other's reasoning. They challenge facts, correct biases, and refine arguments.",
+                    icon: <Icons.ShieldCheck className="w-6 h-6 text-white" />,
+                    color: "bg-pink-500"
+                },
+                {
+                    title: "The Consensus",
+                    desc: "AstrroCheckizes the debate into a single, hallucination-free answer. One voice, backed by the intelligence of many.",
+                    icon: <Icons.Sparkles className="w-6 h-6 text-white" />,
+                    color: "bg-teal-500"
+                }
+            ];
+
+            return (
+                <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                     {/* Background Elements */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-20"
+                        >
+                            <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">The Consensus Engine</h2>
+                            <p className="text-xl text-gray-400">How Astrro turns conflict into clarity.</p>
+                        </motion.div>
+
+                        <div className="relative">
+                            {/* Connecting Line */}
+                            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-teal-500 opacity-20 md:left-1/2 md:-ml-px"></div>
+
+                            <div className="space-y-12">
+                                {steps.map((step, index) => (
+                                    <motion.div 
+                                        key={index}
+                                        initial={{ opacity: 0, y: 50 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true, margin: "-100px" }}
+                                        transition={{ delay: index * 0.2 }}
+                                        className={`relative flex flex-col md:flex-row gap-8 items-center ${index % 2 === 0 ? 'md:flex-row-reverse' : ''}`}
+                                    >
+                                        {/* Content */}
+                                        <div className="flex-1 w-full">
+                                            <div className={`glass-card p-8 rounded-2xl border border-white/5 hover:border-white/10 transition-colors ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'}`}>
+                                                <h3 className="text-2xl font-bold mb-3 text-white">{step.title}</h3>
+                                                <p className="text-gray-400 leading-relaxed">{step.desc}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Icon/Marker */}
+                                        <div className="relative z-10 flex-shrink-0">
+                                            <div className={`w-16 h-16 rounded-full ${step.color} flex items-center justify-center shadow-lg shadow-${step.color}/20 ring-4 ring-black`}>
+                                                {step.icon}
+                                            </div>
+                                        </div>
+
+                                        {/* Spacer for layout balance */}
+                                        <div className="flex-1 hidden md:block"></div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            className="mt-20 text-center"
+                        >
+                            <a href="https://chat.astrroai.com" className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-gray-200 transition-all">
+                                Experience It Live <Icons.ArrowRight />
+                            </a>
+                        </motion.div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Developers = () => {
+            const [activeTab, setActiveTab] = useState('flash');
+
+            const models = {
+                flash: {
+                    name: "Astrro 1.0 Flash",
+                    desc: "Our fastest, most cost-effective model. Ideal for high-volume tasks, simple queries, and real-time applications.",
+                    code: `import astrro
+
+client = astrro.Client(api_key="your_api_key")
+
+response = client.chat.completions.create(
+    model="astrro-1.0-flash",
+    messages=[
+        {"role": "user", "content": "Explain quantum computing in one sentence."}
+    ]
+)
+
+print(response.choices[0].message.content)`
+                },
+                pro: {
+                    name: "Astrro 1.0 Pro",
+                    desc: "The balanced powerhouse. Enhanced reasoning capabilities for complex problem solving, coding, and creative writing.",
+                    code: `import astrro
+
+client = astrro.Client(api_key="your_api_key")
+
+response = client.chat.completions.create(
+    model="astrro-1.0-pro",
+    messages=[
+        {"role": "user", "content": "Write a Python script to scrape a website safely."}
+    ]
+)
+
+print(response.choices[0].message.content)`
+                },
+                debate: {
+                    name: "Astrro 1.0 Debate",
+                    desc: "The Consensus Engine via API. Triggers the multi-model debate system (Llama, GPT, Gemini, Qwen) for the highest accuracy possible.",
+                    code: `import astrro
+
+client = astrro.Client(api_key="your_api_key")
+
+# Enable debate mode for maximum accuracy
+response = client.chat.completions.create(
+    model="astrro-1.0-debate",
+    messages=[
+        {"role": "user", "content": "Analyze the geopolitical implications of..."}
+    ],
+    debate_rounds=3  # Optional: Configure depth of consensus
+)
+
+print(response.choices[0].message.content)
+print(response.debate_transcript) # Access the reasoning process`
+                }
+            };
+
+            return (
+                <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                    {/* Background Elements */}
+                    <div className="absolute top-0 right-0 w-full h-full overflow-hidden -z-10">
+                        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-teal-600/10 rounded-full blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-16"
+                        >
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-card mb-6 border border-yellow-500/30 bg-yellow-500/10">
+                                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                                <span className="text-xs font-medium text-yellow-200">API Access Coming Soon</span>
+                            </div>
+                            <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">Build with Consensus.</h2>
+                            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                                Integrate the world's first multi-model consensus engine directly into your applications. One API key, infinite intelligence.
+                            </p>
+                        </motion.div>
+
+                        <div className="grid lg:grid-cols-2 gap-12 items-start">
+                            {/* Left Column: Model Selection */}
+                            <motion.div 
+                                initial={{ opacity: 0, x: -50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="space-y-6"
+                            >
+                                <h3 className="text-2xl font-bold mb-6">Select a Model</h3>
+                                {Object.keys(models).map((key) => (
+                                    <div 
+                                        key={key}
+                                        onClick={() => setActiveTab(key)}
+                                        className={`p-6 rounded-2xl border cursor-pointer transition-all duration-300 ${activeTab === key ? 'bg-white/10 border-blue-500 shadow-lg shadow-blue-500/10' : 'glass-card border-white/5 hover:border-white/20'}`}
+                                    >
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className={`text-lg font-bold ${activeTab === key ? 'text-white' : 'text-gray-300'}`}>{models[key].name}</h4>
+                                            {activeTab === key && <Icons.Check className="w-5 h-5 text-blue-400" />}
+                                        </div>
+                                        <p className="text-sm text-gray-400 leading-relaxed">{models[key].desc}</p>
+                                    </div>
+                                ))}
+                            </motion.div>
+
+                            {/* Right Column: Code Preview */}
+                            <motion.div 
+                                initial={{ opacity: 0, x: 50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="relative"
+                            >
+                                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
+                                <div className="relative bg-[#0e0e11] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                                    {/* Window Controls */}
+                                    <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/5">
+                                        <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                                        <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                                        <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                                        <div className="ml-auto text-xs text-gray-500 font-mono">main.py</div>
+                                    </div>
+                                    
+                                    {/* Code Area */}
+                                    <div className="p-6 overflow-x-auto">
+                                        <pre className="font-mono text-sm leading-relaxed">
+                                            <code className="language-python text-gray-300">
+                                                {models[activeTab].code.split('\n').map((line, i) => (
+                                                    <div key={i} className="table-row">
+                                                        <span className="table-cell text-gray-600 select-none pr-4 text-right w-8">{i + 1}</span>
+                                                        <span className="table-cell">{line}</span>
+                                                    </div>
+                                                ))}
+                                            </code>
+                                        </pre>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-8 p-6 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                    <div className="flex items-start gap-4">
+                                        <Icons.Sparkles className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
+                                        <div>
+                                            <h4 className="text-white font-bold mb-1">For Developers</h4>
+                                            <p className="text-sm text-gray-400 mb-4">Be the first to build with the Consensus Engine. Developer access is rolling out in waves.</p>
+                                            <button className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
+                                                Request API Key
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const HelpCenter = () => {
+            const categories = [
+                {
+                    id: 'basics',
+                    title: 'Basics & Getting Started',
+                    icon: <Icons.Book className="w-6 h-6 text-blue-400" />,
+                    faqs: [
+                        { q: "What is Astrro?", a: "Astrro is a consensus engine that queries multiple AI models (Llama, GPT, Gemini, Qwen) simultaneously and synthesizes their answers into one high-quality response." },
+                        { q: "Is Astrro free?", a: "Yes, we offer a generous Free tier. For advanced features like Debate Mode and higher limits, we offer Pro and Ultimate plans." }
+                    ]
+                },
+                {
+                    id: 'consensus',
+                    title: 'Consensus & Debate',
+                    icon: <Icons.ShieldCheck className="w-6 h-6 text-purple-400" />,
+                    faqs: [
+                        { q: "How does Debate Mode work?", a: "When you ask a question, multiple models generate initial responses. They then critique each other's answers in a hidden 'scratchpad' before agreeing on the final, most accurate output." },
+                        { q: "Which models are used?", a: "We dynamically route queries to the best models for the task, including Llama 4, GPT 5, Gemini 3 Pro, Qwen 2.5, Llama 3, GPT 4o, Gemini 1.5 Flash." }
+                    ]
+                },
+                {
+                    id: 'billing',
+                    title: 'Billing & Subscriptions',
+                    icon: <Icons.Zap className="w-6 h-6 text-yellow-400" />,
+                    faqs: [
+                        { q: "Can I cancel anytime?", a: "Yes, you can cancel your subscription at any time from your account settings. You'll retain access until the end of your billing period." },
+                        { q: "Do you offer student discounts?", a: "Currently not available but coming soon." }
+                    ]
+                },
+                {
+                    id: 'api',
+                    title: 'API & Developers',
+                    icon: <Icons.Brain className="w-6 h-6 text-pink-400" />,
+                    faqs: [
+                        { q: "How do I get an API key?", a: "API access is currently in closed beta. You can request access via the Developers page." },
+                        { q: "What is the rate limit?", a: "Rate limits vary by tier. Pro users get higher throughput. Check the API documentation for specific details." }
+                    ]
+                }
+            ];
+
+            return (
+                <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                     {/* Background Elements */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+                        <div className="absolute top-0 left-1/2 w-full h-96 bg-blue-600/5 rounded-full blur-[120px] -translate-x-1/2"></div>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-16"
+                        >
+                            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">Help Center</h2>
+                            <p className="text-xl text-gray-400">Everything you need to know about Astrro.</p>
+                        </motion.div>
+
+                        <div className="grid md:grid-cols-2 gap-6 mb-16">
+                            {categories.map((cat, idx) => (
+                                <motion.div
+                                    key={cat.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className="glass-card p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-all"
+                                >
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="p-3 rounded-lg bg-white/5">
+                                            {cat.icon}
+                                        </div>
+                                        <h3 className="text-xl font-bold">{cat.title}</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {cat.faqs.map((faq, i) => (
+                                            <div key={i} className="p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-default">
+                                                <h4 className="font-medium text-white mb-2">{faq.q}</h4>
+                                                <p className="text-sm text-gray-400 leading-relaxed">{faq.a}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            className="text-center p-8 rounded-2xl glass-card border border-white/5"
+                        >
+                            <h3 className="text-2xl font-bold mb-4">Still need help?</h3>
+                            <p className="text-gray-400 mb-6">Our support team is available 24/7 to assist you with any issues.</p>
+                            <a href="mailto:support@astrroai.com" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold hover:bg-gray-200 transition-colors">
+                                Contact Support <Icons.ArrowRight className="w-4 h-4" />
+                            </a>
+                        </motion.div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Careers = () => {
+            const positions = [
+                {
+                    title: "Software Engineer (Python)",
+                    type: "Full-time",
+                    location: "Remote",
+                    desc: "We are looking for an experienced Python developer to help build and scale our consensus engine. You should have deep knowledge of async programming, API design, and LLM integration.",
+                    icon: <Icons.Brain className="w-6 h-6 text-blue-400" />
+                },
+                {
+                    title: "Video Editor",
+                    type: "Contract / Full-time",
+                    location: "Remote",
+                    desc: "Create compelling visual narratives for Astrro. You'll work on product demos, social media content, and brand storytelling. Proficiency in Premiere Pro and After Effects required.",
+                    icon: <Icons.Sparkles className="w-6 h-6 text-purple-400" />
+                },
+                {
+                    title: "Graphic Designer",
+                    type: "Contract",
+                    location: "Remote",
+                    desc: "Shape the visual identity of the next generation of AI. We need someone with a strong portfolio in UI/UX design, branding, and marketing assets.",
+                    icon: <Icons.Zap className="w-6 h-6 text-pink-400" />
+                },
+                {
+                    title: "Digital Marketer",
+                    type: "Full-time",
+                    location: "Remote",
+                    desc: "Lead our growth strategy. You'll manage paid acquisition, SEO, and community building to bring Astrro to millions of users worldwide.",
+                    icon: <Icons.Search className="w-6 h-6 text-teal-400" />
+                }
+            ];
+
+            return (
+                <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                    {/* Background Elements */}
+                    <div className="absolute top-0 right-0 w-full h-full overflow-hidden -z-10">
+                        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-16"
+                        >
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-card mb-6 border border-green-500/30 bg-green-500/10">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                <span className="text-xs font-medium text-green-200">We are hiring</span>
+                            </div>
+                            <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">Join the Mission.</h2>
+                            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                                Help us build the future of truth. We're looking for exceptional talent to join our remote-first team.
+                            </p>
+                        </motion.div>
+
+                        <div className="space-y-6 mb-16">
+                            {positions.map((job, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className="glass-card p-8 rounded-2xl border border-white/5 hover:border-white/20 transition-all group"
+                                >
+                                    <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                        <div className="p-4 rounded-xl bg-white/5 group-hover:scale-110 transition-transform duration-300">
+                                            {job.icon}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex flex-wrap items-center gap-3 mb-2">
+                                                <h3 className="text-xl font-bold text-white">{job.title}</h3>
+                                                <span className="px-2 py-1 rounded-md bg-white/10 text-xs font-medium text-gray-300">{job.type}</span>
+                                                <span className="px-2 py-1 rounded-md bg-white/10 text-xs font-medium text-gray-300">{job.location}</span>
+                                            </div>
+                                            <p className="text-gray-400 leading-relaxed">{job.desc}</p>
+                                        </div>
+                                        <a href={`mailto:support@astrroai.com?subject=Application for ${job.title}`} className="px-6 py-3 rounded-full border border-white/20 hover:bg-white hover:text-black transition-all font-medium text-sm whitespace-nowrap text-center">
+                                            Apply Now
+                                        </a>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            className="text-center p-8 rounded-2xl bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-white/5"
+                        >
+                            <h3 className="text-xl font-bold mb-2">Don't see your role?</h3>
+                            <p className="text-gray-400 mb-6">We are always looking for talented individuals. Send your portfolio and resume to us.</p>
+                            <a href="mailto:support@astrroai.com" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                                Email support@astrroai.com &rarr;
+                            </a>
+                        </motion.div>
+                    </div>
+                </section>
+            );
+        };
+
+        const AboutUs = () => {
+            const values = [
+                {
+                    title: "Truth Above All",
+                    desc: "In an age of AI hallucinations, accuracy isn't a feature—it's the product. We prioritize correctness over speed, and consensus over confidence.",
+                    icon: <Icons.ShieldCheck className="w-6 h-6 text-blue-400" />
+                },
+                {
+                    title: "Radical Transparency",
+                    desc: "We don't hide how the sausage is made. You see the debate, the reasoning, and the sources. Trust is earned through visibility.",
+                    icon: <Icons.Search className="w-6 h-6 text-purple-400" />
+                },
+                {
+                    title: "Model Agnosticism",
+                    desc: "We aren't married to one model. We believe the best intelligence comes from the friction between different perspectives (Llama, GPT, Gemini).",
+                    icon: <Icons.Brain className="w-6 h-6 text-pink-400" />
+                }
+            ];
+
+            return (
+                <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                    {/* Background Elements */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+                        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    <div className="max-w-5xl mx-auto">
+                        {/* Hero Section */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-24"
+                        >
+                            <h2 className="text-4xl md:text-7xl font-display font-bold mb-8">The Future of <br /><span className="text-gradient-brand">Truth.</span></h2>
+                            <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+                                We are building the world's first Consensus Engine. We believe that no single AI model should be the arbiter of truth. By orchestrating a debate between the world's best intelligences, we are creating a new standard for accuracy.
+                            </p>
+                        </motion.div>
+
+                        {/* Story Section */}
+                        <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
+                            <motion.div 
+                                initial={{ opacity: 0, x: -50 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                className="relative"
+                            >
+                                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+                                <div className="relative glass-card p-8 rounded-2xl border border-white/10">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                                            <img src="./assets/logo.png" alt="Astrro Logo" className="w-8 h-8 object-contain" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white">Founded in 2024</h3>
+                                        </div>
+                                    </div>
+                                    <p className="text-gray-300 leading-relaxed">
+                                        Astrro began with a simple observation: even the smartest LLMs make mistakes. But they rarely make the <em>same</em> mistake at the same time. We realized that by cross-referencing models, we could eliminate 99% of hallucinations.
+                                    </p>
+                                </div>
+                            </motion.div>
+                            <motion.div 
+                                initial={{ opacity: 0, x: 50 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                className="space-y-6"
+                            >
+                                <h3 className="text-3xl font-bold font-display">Why we exist</h3>
+                                <p className="text-gray-400 text-lg leading-relaxed">
+                                    The internet is flooding with AI-generated noise. Finding reliable information is becoming harder, not easier.
+                                </p>
+                                <p className="text-gray-400 text-lg leading-relaxed">
+                                    Astrro is the filter. We are the layer of verification that sits between you and the raw output of the models. We are the consensus engine for the post-truth era.
+                                </p>
+                            </motion.div>
+                        </div>
+
+                        {/* New Content: Our Approach */}
+                        <div className="mb-24">
+                            <div className="glass-card p-10 rounded-3xl border border-white/5 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                                <div className="relative z-10">
+                                    <h3 className="text-3xl font-bold font-display mb-8 text-center">The Consensus Protocol</h3>
+                                    <div className="grid md:grid-cols-3 gap-8">
+                                        <div className="space-y-4">
+                                            <div className="text-4xl font-bold text-blue-500/50">01</div>
+                                            <h4 className="text-xl font-bold text-white">Multi-Model Querying</h4>
+                                            <p className="text-gray-400 leading-relaxed">
+                                                We don't rely on a single "black box." Every query is simultaneously processed by Llama, GPT, Gemini, and Qwen, ensuring a diversity of reasoning paths.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="text-4xl font-bold text-purple-500/50">02</div>
+                                            <h4 className="text-xl font-bold text-white">Adversarial Debate</h4>
+                                            <p className="text-gray-400 leading-relaxed">
+                                                Models are pitted against each other. If Model A claims a fact that Model B disputes, they enter a debate loop to verify sources and logic.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="text-4xl font-bold text-teal-500/50">03</div>
+                                            <h4 className="text-xl font-bold text-white">Synthesis & Output</h4>
+                                            <p className="text-gray-400 leading-relaxed">
+                                                The final answer isn't just an average—it's the surviving truth. We deliver a synthesized response that highlights the consensus and notes any remaining uncertainty.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Values Section */}
+                        <div className="mb-24">
+                            <h3 className="text-2xl font-bold text-center mb-12">Our Core Values</h3>
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {values.map((val, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        className="glass-card p-8 rounded-2xl border border-white/5 hover:border-white/10 transition-all text-center"
+                                    >
+                                        <div className="w-12 h-12 mx-auto rounded-lg bg-white/5 flex items-center justify-center mb-6">
+                                            {val.icon}
+                                        </div>
+                                        <h4 className="text-xl font-bold mb-3">{val.title}</h4>
+                                        <p className="text-gray-400 leading-relaxed text-sm">{val.desc}</p>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* CTA */}
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            className="text-center"
+                        >
+                            <h3 className="text-2xl font-bold mb-6">Ready to see the truth?</h3>
+                            <a href="https://chat.astrroai.com" className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-gray-200 transition-all">
+                                Launch Consensus Engine <Icons.ArrowRight />
+                            </a>
+                        </motion.div>
+                    </div>
+                </section>
+            );
+        };
+
+        const BrandGuidelines = () => {
+            const colors = [
+                { name: "Astrro Teal", hex: "#14b8a6", class: "bg-teal-500" },
+                { name: "Deep Blue", hex: "#3b82f6", class: "bg-blue-500" },
+                { name: "Void Purple", hex: "#a855f7", class: "bg-purple-500" },
+                { name: "Dark Matter", hex: "#000000", class: "bg-black" },
+            ];
+
+            const dos = [
+                { title: "Use the logo as provided", icon: <Icons.Check className="w-6 h-6 text-teal-500" /> },
+                { title: "Maintain clear space", icon: <Icons.Check className="w-6 h-6 text-teal-500" /> },
+            ];
+
+            const donts = [
+                { title: "Do not rotate the logo", icon: <Icons.X className="w-6 h-6 text-red-500" /> },
+                { title: "Do not squash or stretch", icon: <Icons.X className="w-6 h-6 text-red-500" /> },
+                { title: "Do not change colors", icon: <Icons.X className="w-6 h-6 text-red-500" /> },
+                { title: "Do not add effects", icon: <Icons.X className="w-6 h-6 text-red-500" /> },
+            ];
+
+            return (
+                <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                    {/* Background Elements */}
+                    <div className="absolute top-0 right-0 w-full h-full overflow-hidden -z-10">
+                        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    <div className="max-w-5xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-20"
+                        >
+                            <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">Brand Guidelines</h2>
+                            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                                The visual elements that define Astrro. Use these guidelines to maintain consistency across all communications.
+                            </p>
+                        </motion.div>
+
+                        {/* Logo Section */}
+                        <div className="mb-24">
+                            <h3 className="text-2xl font-bold mb-8 border-b border-white/10 pb-4">Logomark</h3>
+                            <div className="glass-card p-20 rounded-2xl flex items-center justify-center border border-white/5 bg-black/40">
+                                <div className="text-center">
+                                    <img src="./assets/logo.png" alt="Astrro Logo" className="w-48 h-48 mx-auto mb-8 object-contain" />
+                                    <a href="./assets/logo.png" download className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 transition-all text-sm font-medium">
+                                        Download Logo <Icons.ArrowRight className="w-4 h-4" />
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Dos and Don'ts */}
+                        <div className="mb-24">
+                            <h3 className="text-2xl font-bold mb-8 border-b border-white/10 pb-4">Dos and Don'ts</h3>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <h4 className="text-lg font-bold text-teal-500 mb-4">Do</h4>
+                                    {dos.map((item, idx) => (
+                                        <div key={idx} className="glass-card p-6 rounded-xl border border-teal-500/20 flex items-center gap-4">
+                                            <div className="p-2 rounded-full bg-teal-500/10">
+                                                {item.icon}
+                                            </div>
+                                            <span className="text-gray-300">{item.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="text-lg font-bold text-red-500 mb-4">Don't</h4>
+                                    {donts.map((item, idx) => (
+                                        <div key={idx} className="glass-card p-6 rounded-xl border border-red-500/20 flex items-center gap-4">
+                                            <div className="p-2 rounded-full bg-red-500/10">
+                                                {item.icon}
+                                            </div>
+                                            <span className="text-gray-300">{item.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Typography */}
+                        <div className="mb-24">
+                            <h3 className="text-2xl font-bold mb-8 border-b border-white/10 pb-4">Typography</h3>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="glass-card p-8 rounded-2xl border border-white/5">
+                                    <div className="text-6xl font-display font-bold mb-4">Aa</div>
+                                    <h4 className="text-xl font-bold mb-2">Space Grotesk</h4>
+                                    <p className="text-gray-400 text-sm mb-6">Primary Display Font</p>
+                                    <div className="space-y-2 text-sm text-gray-500">
+                                        <p><span className="font-bold text-white">Bold</span> - Headlines</p>
+                                        <p><span className="font-medium text-white">Medium</span> - Subheadings</p>
+                                    </div>
+                                </div>
+                                <div className="glass-card p-8 rounded-2xl border border-white/5">
+                                    <div className="text-6xl font-sans font-bold mb-4">Aa</div>
+                                    <h4 className="text-xl font-bold mb-2">Inter</h4>
+                                    <p className="text-gray-400 text-sm mb-6">Body Copy Font</p>
+                                    <div className="space-y-2 text-sm text-gray-500">
+                                        <p><span className="font-bold text-white">Bold</span> - UI Elements</p>
+                                        <p><span className="font-normal text-white">Regular</span> - Paragraphs</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Colors */}
+                        <div className="mb-24">
+                            <h3 className="text-2xl font-bold mb-8 border-b border-white/10 pb-4">Brand Colors</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                {colors.map((color, idx) => (
+                                    <div key={idx} className="glass-card p-4 rounded-xl border border-white/5">
+                                        <div className={`w-full h-24 rounded-lg mb-4 ${color.class}`}></div>
+                                        <h4 className="font-bold text-sm">{color.name}</h4>
+                                        <p className="text-gray-500 text-xs font-mono mt-1">{color.hex}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Privacy = () => (
+            <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                <div className="max-w-4xl mx-auto">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <h2 className="text-4xl md:text-6xl font-display font-bold mb-8">Privacy Policy</h2>
+                        <div className="space-y-6 text-gray-400 leading-relaxed">
+                            <p>Last updated: December 20, 2025</p>
+                            <p>At Astrro, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your personal information.</p>
+                            
+                            <h3 className="text-2xl font-bold text-white mt-8 mb-4">1. Information We Collect</h3>
+                            <p>We collect information you provide directly to us, such as when you create an account, use our services, or communicate with us.</p>
+
+                            <h3 className="text-2xl font-bold text-white mt-8 mb-4">2. How We Use Your Information</h3>
+                            <p>We use your information to provide, maintain, and improve our services, as well as to communicate with you.</p>
+
+                            <h3 className="text-2xl font-bold text-white mt-8 mb-4">3. Data Security</h3>
+                            <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access or disclosure.</p>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+        );
+
+        const Terms = () => (
+            <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+                <div className="max-w-4xl mx-auto">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <h2 className="text-4xl md:text-6xl font-display font-bold mb-8">Terms of Service</h2>
+                        <div className="space-y-6 text-gray-400 leading-relaxed">
+                            <p>Last updated: December 20, 2025</p>
+                            <p>Please read these Terms of Service carefully before using Astrro.</p>
+                            
+                            <h3 className="text-2xl font-bold text-white mt-8 mb-4">1. Acceptance of Terms</h3>
+                            <p>By accessing or using our services, you agree to be bound by these Terms. If you disagree with any part of the terms, you may not access the service.</p>
+
+                            <h3 className="text-2xl font-bold text-white mt-8 mb-4">2. Use License</h3>
+                            <p>Permission is granted to temporarily download one copy of the materials (information or software) on Astrro's website for personal, non-commercial transitory viewing only.</p>
+
+                            <h3 className="text-2xl font-bold text-white mt-8 mb-4">3. Disclaimer</h3>
+                            <p>The materials on Astrro's website are provided on an 'as is' basis. Astrro makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties.</p>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+        );
+
+        const Footer = ({ onNavigate }) => {
+            return (
+                <footer className="py-12 border-t border-dark-border">
+                    <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div className="text-gray-500 text-sm">
+                            © 2025 Astrro AI Inc. All rights reserved.
+                        </div>
+                        <div className="flex gap-6">
+                            <a href="#" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('about-us'); }} className="text-gray-500 hover:text-white transition-colors">About Us</a>
+                            <a href="#" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('brand-guidelines'); }} className="text-gray-500 hover:text-white transition-colors">Brand Guidelines</a>
+                            <a href="#" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('help-center'); }} className="text-gray-500 hover:text-white transition-colors">Help Center</a>
+                            <a href="#" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('careers'); }} className="text-gray-500 hover:text-white transition-colors">Careers</a>
+                            <a href="#" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('privacy'); }} className="text-gray-500 hover:text-white transition-colors">Privacy</a>
+                            <a href="#" onClick={(e) => { e.preventDefault(); if(onNavigate) onNavigate('terms'); }} className="text-gray-500 hover:text-white transition-colors">Terms</a>
+                        </div>
+                    </div>
+                </footer>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('home');
+
+            const navigateTo = (page) => {
+                window.scrollTo(0, 0);
+                setView(page);
+            };
+
+            return (
+                <div className="bg-dark-bg text-white font-sans selection:bg-blue-500/30">
+                    <Navbar onNavigate={navigateTo} currentView={view} />
+                    {view === 'home' && (
+                        <>
+                            <Hero onNavigate={navigateTo} />
+                            <Features />
+                            <Pricing />
+                        </>
+                    )}
+                    {view === 'how-it-works' && <HowItWorks />}
+                    {view === 'developers' && <Developers />}
+                    {view === 'help-center' && <HelpCenter />}
+                    {view === 'careers' && <Careers />}
+                    {view === 'brand-guidelines' && <BrandGuidelines />}
+                    {view === 'about-us' && <AboutUs />}
+                    {view === 'privacy' && <Privacy />}
+                    {view === 'terms' && <Terms />}
+                    <Footer onNavigate={navigateTo} />
+                </div>
+            );
+        };
+
+        // Disable Right Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
