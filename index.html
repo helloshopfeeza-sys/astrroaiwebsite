@@ -712,7 +712,7 @@ print(response.debate_transcript) # Access the reasoning process`
                                 initial={{ opacity: 0, x: 50 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.4 }}
-                                className="relative"
+                                className="relative w-full max-w-[100vw] overflow-hidden"
                             >
                                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
                                 <div className="relative bg-[#0e0e11] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
@@ -725,13 +725,13 @@ print(response.debate_transcript) # Access the reasoning process`
                                     </div>
                                     
                                     {/* Code Area */}
-                                    <div className="p-6 overflow-x-auto">
-                                        <pre className="font-mono text-sm leading-relaxed">
-                                            <code className="language-python text-gray-300">
+                                    <div className="p-4 md:p-6 overflow-x-auto custom-scrollbar">
+                                        <pre className="font-mono text-xs md:text-sm leading-relaxed min-w-max">
+                                            <code className="language-python text-gray-300 block">
                                                 {models[activeTab].code.split('\n').map((line, i) => (
-                                                    <div key={i} className="table-row">
-                                                        <span className="table-cell text-gray-600 select-none pr-4 text-right w-8">{i + 1}</span>
-                                                        <span className="table-cell">{line}</span>
+                                                    <div key={i} className="flex">
+                                                        <span className="text-gray-600 select-none pr-4 text-right w-8 flex-shrink-0">{i + 1}</span>
+                                                        <span className="whitespace-pre">{line}</span>
                                                     </div>
                                                 ))}
                                             </code>
@@ -740,12 +740,12 @@ print(response.debate_transcript) # Access the reasoning process`
                                 </div>
                                 
                                 <div className="mt-8 p-6 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                                    <div className="flex items-start gap-4">
+                                    <div className="flex flex-col sm:flex-row items-start gap-4">
                                         <Icons.Sparkles className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
                                         <div>
                                             <h4 className="text-white font-bold mb-1">For Developers</h4>
                                             <p className="text-sm text-gray-400 mb-4">Be the first to build with the Consensus Engine. Developer access is rolling out in waves.</p>
-                                            <button className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
+                                            <button className="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
                                                 Request API Key
                                             </button>
                                         </div>
